@@ -1,4 +1,3 @@
-use reqwest::Client;
 use std::sync::mpsc::{Receiver, Sender};
 
 use eframe::{
@@ -8,7 +7,11 @@ use eframe::{
     App, CreationContext, Frame
 };
 
-use crate::ui::address_bar::get_address_bar;
+use crate::ui::{
+    address_bar::get_address_bar,
+    go_button::get_go_button,
+    main_header::get_main_header
+};
 
 pub struct BrowserApp {
     sender: Sender<String>,
@@ -30,9 +33,7 @@ impl Default for BrowserApp {
 
 fn send_request(address: String, sender: Sender<String>, ctx: Context) {
     tokio::spawn(async move {
-        let html: String = Client::default()
-            .get(address)
-            .send()
+        let html: String = reqwest::get(address)
             .await
             .expect("Unable to send request")
             .text()
@@ -57,18 +58,17 @@ impl App for BrowserApp {
         ctx: &Context,
         _frame: &mut Frame
     ) {
-        if let Ok(addr) = self.receiver.try_recv() {
+        if let Ok(html_response) = self.receiver.try_recv() {
             // TODO: display html
-            println!("addr: {}", addr)
+            println!("addr: {}", html_response);
         }
 
         CentralPanel::default().show(ctx, |ui| {
-            ui.heading("I will be a web browser");
-            
+            get_main_header(ui);
             get_address_bar(ui, &mut self.address_text);
+            let go_btn = get_go_button(ui);
             
-            let btn = ui.button("Go!");
-            if btn.clicked() {
+            if go_btn.clicked() {
                 send_request(self.address_text.to_string(), self.sender.clone(), ctx.clone());
             }
         });
