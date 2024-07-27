@@ -169,6 +169,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "api-tester"
+version = "0.1.0"
+dependencies = [
+ "eframe",
+ "reqwest",
+ "tokio",
+]
+
+[[package]]
 name = "arboard"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3644,15 +3653,6 @@ dependencies = [
  "log",
  "once_cell",
  "pkg-config",
-]
-
-[[package]]
-name = "web-browser"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "reqwest",
- "tokio",
 ]
 
 [[package]]

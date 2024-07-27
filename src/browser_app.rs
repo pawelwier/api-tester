@@ -6,18 +6,23 @@ use eframe::{
     },
     App, CreationContext, Frame
 };
-use reqwest::{get, header, Response, StatusCode};
+use reqwest::{
+    Error, get, header, Response, StatusCode
+};
 
 use crate::ui::{
     address_bar::get_address_bar,
     go_button::get_go_button,
-    main_header::get_main_header
+    main_header::get_main_header,
+    status_text::get_status_text
 };
 
 pub struct BrowserApp {
-    sender: Sender<Response>,
-    receiver: Receiver<Response>,
-    pub address_text: String
+    sender: Sender<Result<Response, Error>>,
+    receiver: Receiver<Result<Response, Error>>,
+    pub address_text: String,
+    pub status_text: String, // TODO: change to StatusCode
+    pub headers_text: String,
 }
 
 pub struct HttpResponse {
@@ -32,17 +37,17 @@ impl Default for BrowserApp {
         Self { 
             sender,
             receiver,
-            address_text: "".to_owned() 
+            address_text: "".to_owned(),
+            status_text: "".to_owned(),
+            headers_text: "".to_owned()
         }
     }
 }
 
-fn send_request(address: String, sender: Sender<Response>, ctx: Context) {
+fn send_request(address: String, sender: Sender<Result<Response, Error>>, ctx: Context) {
     tokio::spawn(async move {
-        let response: Response = get(address)
-            .await
-            .expect("Unable to send request");
-        let _ = sender.send(response);
+        let response_result: Result<Response, reqwest::Error> = get(address).await;
+        let _ = sender.send(response_result);
         ctx.request_repaint();
     });
 }
@@ -98,18 +103,24 @@ impl App for BrowserApp {
         _frame: &mut Frame
     ) {
         if let Ok(response) = self.receiver.try_recv() {
-            let http_response = get_http_response(response);        
-            let status = http_response.status;
-            let headers = http_response.headers;
-
-            println!("status: {}\n", status);
-            println!("headers:");
-            for (key, value) in headers.iter() {
-                println!("{:?}: {:?}", key, value);
+            if let Ok(res) = response {
+                let http_response = get_http_response(res);        
+                self.status_text = http_response.status.to_string();
+                let headers = http_response.headers;
+    
+    
+    
+                println!("status: {}\n", self.status_text);
+                println!("headers:");
+                for (key, value) in headers.iter() {
+                    println!("{:?}: {:?}", key, value);
+                }
+                println!("\n\n");
+            } else {
+                self.status_text = "Unable to send request".to_string();
             }
-            println!("\n\n");
         }
-        
+
         CentralPanel::default().show(ctx, |ui| {
             get_main_header(ui);
             get_address_bar(ui, &mut self.address_text);
@@ -118,6 +129,8 @@ impl App for BrowserApp {
             if go_btn.clicked() {
                 send_request(self.address_text.to_string(), self.sender.clone(), ctx.clone());
             }
+
+            get_status_text(ui, &self.status_text);
         });
     }
 }
