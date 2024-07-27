@@ -6,6 +6,7 @@ use eframe::{
     },
     App, CreationContext, Frame
 };
+use reqwest::{get, header, Response, StatusCode};
 
 use crate::ui::{
     address_bar::get_address_bar,
@@ -14,9 +15,14 @@ use crate::ui::{
 };
 
 pub struct BrowserApp {
-    sender: Sender<String>,
-    receiver: Receiver<String>,
+    sender: Sender<Response>,
+    receiver: Receiver<Response>,
     pub address_text: String
+}
+
+pub struct HttpResponse {
+    status: StatusCode,
+    headers: header::HeaderMap
 }
 
 impl Default for BrowserApp {
@@ -31,19 +37,52 @@ impl Default for BrowserApp {
     }
 }
 
-fn send_request(address: String, sender: Sender<String>, ctx: Context) {
+fn send_request(address: String, sender: Sender<Response>, ctx: Context) {
     tokio::spawn(async move {
-        let html: String = reqwest::get(address)
+        let response: Response = get(address)
             .await
-            .expect("Unable to send request")
-            .text()
-            .await
-            .expect("Unable to get html response");
-
-        let _ = sender.send(html);
+            .expect("Unable to send request");
+        let _ = sender.send(response);
         ctx.request_repaint();
     });
 }
+
+fn get_http_response(response: Response) -> HttpResponse {
+    let status = get_status(&response);
+    let headers = get_headers(&response);
+
+    HttpResponse {
+        status,
+        headers
+    }
+}
+
+fn get_status(response: &Response) -> StatusCode {
+    response
+        .status()
+}
+
+fn get_headers(response: &Response) -> header::HeaderMap {
+    response
+        .headers()
+        .clone()
+}
+
+/*
+    async fn get_html(response: Response) -> String {
+        response
+            .text()
+            .await
+            .expect("Unable to get html response")
+    }
+
+    async fn get_json(response: Response) -> String {
+        response
+            .json()
+            .await
+            .expect("Unable to get json response")
+    }
+*/
 
 impl BrowserApp {
     pub fn new(_cc: &CreationContext<'_>) -> Self {
@@ -58,11 +97,19 @@ impl App for BrowserApp {
         ctx: &Context,
         _frame: &mut Frame
     ) {
-        if let Ok(html_response) = self.receiver.try_recv() {
-            // TODO: display html
-            println!("addr: {}", html_response);
-        }
+        if let Ok(response) = self.receiver.try_recv() {
+            let http_response = get_http_response(response);        
+            let status = http_response.status;
+            let headers = http_response.headers;
 
+            println!("status: {}\n", status);
+            println!("headers:");
+            for (key, value) in headers.iter() {
+                println!("{:?}: {:?}", key, value);
+            }
+            println!("\n\n");
+        }
+        
         CentralPanel::default().show(ctx, |ui| {
             get_main_header(ui);
             get_address_bar(ui, &mut self.address_text);
