@@ -30,7 +30,7 @@ fn main() {
     };
 
     let _ = eframe::run_native(
-        "Web browser",
+        "Api tester",
         options,
         Box::new(
             |cc| Ok(Box::new(BrowserApp::new(cc)))

@@ -13,9 +13,12 @@ use reqwest::{
 };
 
 use crate::ui::{
-    address_bar::get_address_bar, go_button::get_go_button, headers::get_headers_text, main_header::get_main_header, status_text::{
+    headers::get_headers_text,
+    main_header::get_main_header,
+    status_text::{
         get_status_color, get_status_text
-    }
+    }, 
+    url_form::get_url_form
 };
 
 use crate::http::{
@@ -99,10 +102,22 @@ impl App for BrowserApp {
 
         CentralPanel::default().show(ctx, |ui| {
             get_main_header(ui);
-            get_address_bar(ui, &mut self.address_text);
-            let go_btn = get_go_button(ui);
             
-            if go_btn.clicked() {
+            let mut is_send_req: bool = false;
+            let (address_bar_id, go_btn) = get_url_form(ui, &mut self.address_text);
+            let focused_id = ctx.memory(|i| i.focused());
+            match focused_id {
+                Some(id) => { if address_bar_id == id {
+                    ctx.input(|i| { if i.key_down(eframe::egui::Key::Enter) {
+                        is_send_req = true;
+                    } });
+                } },
+                None => {}
+            }
+            
+            if go_btn.clicked() { is_send_req = true; };
+            
+            if is_send_req {
                 send_request(self.address_text.to_string(), self.sender.clone(), ctx.clone());
             }
 

@@ -8,9 +8,16 @@ use reqwest::{
 
 use super::HttpResponse;
 
+fn get_address_url(address: String) -> String {
+    let prefix = "http://".to_owned();
+    if !address.starts_with(&prefix) {
+        prefix + &address
+    } else { address }
+}
+
 pub fn send_request(address: String, sender: Sender<Result<Response, Error>>, ctx: Context) {
     tokio::spawn(async move {
-        let response_result: Result<Response, reqwest::Error> = get(address).await;
+        let response_result: Result<Response, reqwest::Error> = get(get_address_url(address)).await;
         let _ = sender.send(response_result);
         ctx.request_repaint();
     });
