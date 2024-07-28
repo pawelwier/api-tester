@@ -1,33 +1,57 @@
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{
+    Receiver, Sender
+};
 
 use eframe::{
     egui::{
-        CentralPanel, Context
+        CentralPanel, Color32, Context
     },
     App, CreationContext, Frame
 };
 use reqwest::{
-    Error, get, header, Response, StatusCode
+    Error, Response
 };
 
 use crate::ui::{
     address_bar::get_address_bar,
     go_button::get_go_button,
     main_header::get_main_header,
-    status_text::get_status_text
+    status_text::{get_status_color, get_status_text}
+};
+
+use crate::http::{
+    HttpStatus,
+    req_res::{
+        send_request, get_http_response
+    }
 };
 
 pub struct BrowserApp {
     sender: Sender<Result<Response, Error>>,
     receiver: Receiver<Result<Response, Error>>,
     pub address_text: String,
-    pub status_text: String, // TODO: change to StatusCode
+    pub status: HttpStatus,
     pub headers_text: String,
 }
 
-pub struct HttpResponse {
-    status: StatusCode,
-    headers: header::HeaderMap
+impl BrowserApp {
+    pub fn new(_cc: &CreationContext<'_>) -> Self {
+        // TODO: set options for cc
+        Self::default()
+    }
+
+    pub fn set_status(
+        &mut self,
+        text: String,
+        code: Option<u16>,
+        color: Option<Color32>
+    ) {
+        self.status = HttpStatus {
+            code,
+            text,
+            color
+        }
+    }
 }
 
 impl Default for BrowserApp {
@@ -38,61 +62,13 @@ impl Default for BrowserApp {
             sender,
             receiver,
             address_text: "".to_owned(),
-            status_text: "".to_owned(),
+            status: HttpStatus { 
+                text: "".to_owned(),
+                code: None,
+                color: None
+            },
             headers_text: "".to_owned()
         }
-    }
-}
-
-fn send_request(address: String, sender: Sender<Result<Response, Error>>, ctx: Context) {
-    tokio::spawn(async move {
-        let response_result: Result<Response, reqwest::Error> = get(address).await;
-        let _ = sender.send(response_result);
-        ctx.request_repaint();
-    });
-}
-
-fn get_http_response(response: Response) -> HttpResponse {
-    let status = get_status(&response);
-    let headers = get_headers(&response);
-
-    HttpResponse {
-        status,
-        headers
-    }
-}
-
-fn get_status(response: &Response) -> StatusCode {
-    response
-        .status()
-}
-
-fn get_headers(response: &Response) -> header::HeaderMap {
-    response
-        .headers()
-        .clone()
-}
-
-/*
-    async fn get_html(response: Response) -> String {
-        response
-            .text()
-            .await
-            .expect("Unable to get html response")
-    }
-
-    async fn get_json(response: Response) -> String {
-        response
-            .json()
-            .await
-            .expect("Unable to get json response")
-    }
-*/
-
-impl BrowserApp {
-    pub fn new(_cc: &CreationContext<'_>) -> Self {
-        // TODO: set options for cc
-        Self::default()
     }
 }
 
@@ -104,20 +80,27 @@ impl App for BrowserApp {
     ) {
         if let Ok(response) = self.receiver.try_recv() {
             if let Ok(res) = response {
-                let http_response = get_http_response(res);        
-                self.status_text = http_response.status.to_string();
+                let http_response = get_http_response(res);
+                let status = http_response.status;
+                self.set_status(
+                    status.canonical_reason().unwrap().to_string(),
+                    Some(status.as_u16()),
+                    get_status_color(status)
+                );
                 let headers = http_response.headers;
     
-    
-    
-                println!("status: {}\n", self.status_text);
+                println!("status: {}\n", self.status.text);
                 println!("headers:");
                 for (key, value) in headers.iter() {
                     println!("{:?}: {:?}", key, value);
                 }
-                println!("\n\n");
+                println!("\n");
             } else {
-                self.status_text = "Unable to send request".to_string();
+                self.set_status(
+                    "Unable to send request".to_string(),
+                    None,
+                    Some(Color32::WHITE)
+                )
             }
         }
 
@@ -130,7 +113,7 @@ impl App for BrowserApp {
                 send_request(self.address_text.to_string(), self.sender.clone(), ctx.clone());
             }
 
-            get_status_text(ui, &self.status_text);
+            get_status_text(ui, &self.status);
         });
     }
 }

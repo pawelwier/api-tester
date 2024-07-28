@@ -1,10 +1,13 @@
-use eframe::{egui::ViewportBuilder, NativeOptions};
+use eframe::{
+    egui::ViewportBuilder, NativeOptions
+};
 use browser_app::BrowserApp;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 
 mod browser_app;
 mod ui;
+mod http;
 
 fn main() {
     let rt = Runtime::new().expect("Unable to create Runtime");
