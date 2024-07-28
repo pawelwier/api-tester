@@ -21,16 +21,17 @@ fn main() {
         })
     });
 
-    let native_options = NativeOptions {
+    let options = NativeOptions {
         viewport: ViewportBuilder::default().with_inner_size([
-            1200.0, 800.0
+            600.0, 600.0
         ]),
+        centered: true,
         ..NativeOptions::default()
     };
 
     let _ = eframe::run_native(
         "Web browser",
-        native_options,
+        options,
         Box::new(
             |cc| Ok(Box::new(BrowserApp::new(cc)))
         )

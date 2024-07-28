@@ -9,14 +9,13 @@ use eframe::{
     App, CreationContext, Frame
 };
 use reqwest::{
-    Error, Response
+    header::HeaderMap, Error, Response
 };
 
 use crate::ui::{
-    address_bar::get_address_bar,
-    go_button::get_go_button,
-    main_header::get_main_header,
-    status_text::{get_status_color, get_status_text}
+    address_bar::get_address_bar, go_button::get_go_button, headers::get_headers_text, main_header::get_main_header, status_text::{
+        get_status_color, get_status_text
+    }
 };
 
 use crate::http::{
@@ -31,7 +30,7 @@ pub struct BrowserApp {
     receiver: Receiver<Result<Response, Error>>,
     pub address_text: String,
     pub status: HttpStatus,
-    pub headers_text: String,
+    pub headers: Option<HeaderMap>,
 }
 
 impl BrowserApp {
@@ -67,7 +66,7 @@ impl Default for BrowserApp {
                 code: None,
                 color: None
             },
-            headers_text: "".to_owned()
+            headers: None
         }
     }
 }
@@ -87,20 +86,14 @@ impl App for BrowserApp {
                     Some(status.as_u16()),
                     get_status_color(status)
                 );
-                let headers = http_response.headers;
-    
-                println!("status: {}\n", self.status.text);
-                println!("headers:");
-                for (key, value) in headers.iter() {
-                    println!("{:?}: {:?}", key, value);
-                }
-                println!("\n");
+                self.headers = Some(http_response.headers);
             } else {
                 self.set_status(
                     "Unable to send request".to_string(),
                     None,
                     Some(Color32::WHITE)
-                )
+                );
+                self.headers = None;
             }
         }
 
@@ -114,6 +107,7 @@ impl App for BrowserApp {
             }
 
             get_status_text(ui, &self.status);
+            get_headers_text(ui, &self.headers);
         });
     }
 }
