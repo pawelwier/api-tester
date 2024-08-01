@@ -1,4 +1,6 @@
-use eframe::egui::{Id, Response, TextEdit, Ui};
+use eframe::egui::{
+    CursorIcon, Id, Response, TextEdit, Ui
+};
 
 fn get_address_bar(ui: &mut Ui, text: &mut String) -> Id {
     let text_edit = TextEdit::singleline(text);
@@ -12,7 +14,9 @@ fn get_address_bar(ui: &mut Ui, text: &mut String) -> Id {
 }
 
 fn get_go_button(ui: &mut Ui) -> Response {
-    ui.button("Go!")
+    ui
+        .button("Go!")
+        .on_hover_cursor(CursorIcon::PointingHand)
 }
 
 pub fn get_url_form(ui: &mut Ui, text: &mut String) -> (Id, Response) {

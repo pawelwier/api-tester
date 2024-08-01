@@ -13,12 +13,9 @@ use reqwest::{
 };
 
 use crate::ui::{
-    headers::get_headers_text,
-    main_header::get_main_header,
-    status_text::{
+    headers::get_headers_text, main_header::get_main_header, request_type_select::get_req_method_select, status_text::{
         get_status_color, get_status_text
-    }, 
-    url_form::get_url_form
+    }, url_form::get_url_form
 };
 
 use crate::http::{
@@ -28,12 +25,29 @@ use crate::http::{
     }
 };
 
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
+pub enum ReqMethod {
+    Get,
+    Post,
+    Put,
+    Delete,
+    // Patch
+}
+
+impl ReqMethod {
+    pub const VALUES: [Self; 4] = [
+        ReqMethod::Get, ReqMethod::Post, ReqMethod::Put, ReqMethod::Delete
+    ];
+}
+
 pub struct BrowserApp {
     sender: Sender<Result<Response, Error>>,
     receiver: Receiver<Result<Response, Error>>,
+
     pub address_text: String,
     pub status: HttpStatus,
     pub headers: Option<HeaderMap>,
+    pub method: ReqMethod
 }
 
 impl BrowserApp {
@@ -69,6 +83,7 @@ impl Default for BrowserApp {
                 code: None,
                 color: None
             },
+            method: ReqMethod::Get,
             headers: None
         }
     }
@@ -103,6 +118,8 @@ impl App for BrowserApp {
         CentralPanel::default().show(ctx, |ui| {
             get_main_header(ui);
             
+            get_req_method_select(ui, self);
+
             let mut is_send_req: bool = false;
             let (address_bar_id, go_btn) = get_url_form(ui, &mut self.address_text);
             let focused_id = ctx.memory(|i| i.focused());
@@ -118,7 +135,12 @@ impl App for BrowserApp {
             if go_btn.clicked() { is_send_req = true; };
             
             if is_send_req {
-                send_request(self.address_text.to_string(), self.sender.clone(), ctx.clone());
+                send_request(
+                    self.address_text.to_string(),
+                    self.sender.clone(),
+                    self.method,    
+                    ctx.clone()
+                );
             }
 
             get_status_text(ui, &self.status);
