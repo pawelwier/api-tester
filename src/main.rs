@@ -23,7 +23,7 @@ fn main() {
 
     let options = NativeOptions {
         viewport: ViewportBuilder::default().with_inner_size([
-            600.0, 600.0
+            600.0, 700.0
         ]),
         centered: true,
         ..NativeOptions::default()

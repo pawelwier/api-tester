@@ -32,7 +32,7 @@ fn get_req_builder(
 
 pub fn send_request(
     address: String,
-    sender: Sender<Result<Response, Error>>,
+    sender: Sender<Result<HttpResponse, Error>>,
     method: ReqMethod,
     ctx: Context
 ) {
@@ -49,19 +49,24 @@ pub fn send_request(
         let response_result: Result<Response, reqwest::Error> = req_builder
             .send()
             .await;
-        let _ = sender.send(response_result);
-        ctx.request_repaint();
+
+        match response_result {
+            Ok(response) => {
+                let status = get_status(&response);
+                let headers = get_headers(&response);
+                let json = get_json(response).await;
+                let _ = sender.send(
+                    Ok(HttpResponse {
+                        status,
+                        headers,
+                        json
+                    })
+                );
+                ctx.request_repaint();
+            },
+            Err(_e) => ()
+        }
     });
-}
-
-pub fn get_http_response(response: Response) -> HttpResponse {
-    let status = get_status(&response);
-    let headers = get_headers(&response);
-
-    HttpResponse {
-        status,
-        headers
-    }
 }
 
 pub fn get_status(response: &Response) -> StatusCode {
@@ -75,6 +80,17 @@ pub fn get_headers(response: &Response) -> header::HeaderMap {
         .clone()
 }
 
+async fn get_json(response: Response) -> Option<serde_json::Value> {
+    let json_result = response
+        .json()
+        .await;
+
+    match json_result {
+        Ok(data) => data,
+        Err(_) => None
+    }
+}
+
 /*
     async fn get_html(response: Response) -> String {
         response
@@ -83,10 +99,5 @@ pub fn get_headers(response: &Response) -> header::HeaderMap {
             .expect("Unable to get html response")
     }
 
-    async fn get_json(response: Response) -> String {
-        response
-            .json()
-            .await
-            .expect("Unable to get json response")
-    }
+
 */

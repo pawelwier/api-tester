@@ -9,20 +9,23 @@ use eframe::{
     App, CreationContext, Frame
 };
 use reqwest::{
-    header::HeaderMap, Error, Response
+    header::HeaderMap, Error
 };
 
-use crate::ui::{
-    headers::get_headers_text, main_header::get_main_header, request_type_select::get_req_method_select, status_text::{
+use crate::{http::HttpResponse, ui::{
+    headers::get_headers_text,
+    json_res::get_json_res_text,
+    main_header::get_main_header,
+    request_type_select::get_req_method_select,
+    status_text::{
         get_status_color, get_status_text
-    }, url_form::get_url_form
-};
+    },
+    url_form::get_url_form
+}};
 
 use crate::http::{
     HttpStatus,
-    req_res::{
-        send_request, get_http_response
-    }
+    req_res::send_request
 };
 
 #[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
@@ -41,13 +44,15 @@ impl ReqMethod {
 }
 
 pub struct BrowserApp {
-    sender: Sender<Result<Response, Error>>,
-    receiver: Receiver<Result<Response, Error>>,
+    sender: Sender<Result<HttpResponse, Error>>,
+    receiver: Receiver<Result<HttpResponse, Error>>,
+    
+    pub method: ReqMethod,
 
     pub address_text: String,
     pub status: HttpStatus,
     pub headers: Option<HeaderMap>,
-    pub method: ReqMethod
+    pub json: Option<serde_json::Value>
 }
 
 impl BrowserApp {
@@ -84,11 +89,13 @@ impl Default for BrowserApp {
                 color: None
             },
             method: ReqMethod::Get,
-            headers: None
+            headers: None,
+            json: None
         }
     }
 }
 
+// TODO: Refactor
 impl App for BrowserApp {
     fn update(
         &mut self,
@@ -96,8 +103,7 @@ impl App for BrowserApp {
         _frame: &mut Frame
     ) {
         if let Ok(response) = self.receiver.try_recv() {
-            if let Ok(res) = response {
-                let http_response = get_http_response(res);
+            if let Ok(http_response) = response {
                 let status = http_response.status;
                 self.set_status(
                     status.canonical_reason().unwrap().to_string(),
@@ -105,6 +111,7 @@ impl App for BrowserApp {
                     get_status_color(status)
                 );
                 self.headers = Some(http_response.headers);
+                self.json = http_response.json;
             } else {
                 self.set_status(
                     "Unable to send request".to_string(),
@@ -117,7 +124,6 @@ impl App for BrowserApp {
 
         CentralPanel::default().show(ctx, |ui| {
             get_main_header(ui);
-            
             get_req_method_select(ui, self);
 
             let mut is_send_req: bool = false;
@@ -145,6 +151,7 @@ impl App for BrowserApp {
 
             get_status_text(ui, &self.status);
             get_headers_text(ui, &self.headers);
+            get_json_res_text(ui, &self.json);
         });
     }
 }

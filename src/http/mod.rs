@@ -12,5 +12,6 @@ pub struct HttpStatus {
 }
 pub struct HttpResponse {
     pub status: StatusCode,
-    pub headers: header::HeaderMap
+    pub headers: header::HeaderMap,
+    pub json: Option<serde_json::Value>
 }
