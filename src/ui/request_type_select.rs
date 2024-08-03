@@ -1,6 +1,6 @@
 use eframe::egui::Ui;
 
-use crate::browser_app::{
+use crate::app::browser_app::{
     BrowserApp, ReqMethod
 };
 

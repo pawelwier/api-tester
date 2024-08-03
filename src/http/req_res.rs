@@ -6,7 +6,7 @@ use reqwest::{
     header, Error, RequestBuilder, Response, StatusCode
 };
 
-use crate::browser_app::ReqMethod;
+use crate::app::browser_app::ReqMethod;
 
 use super::HttpResponse;
 
