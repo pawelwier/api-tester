@@ -39,7 +39,6 @@ pub fn send_request(
     let client = reqwest::Client::new();
     let url = get_address_url(address);
 
-
     tokio::spawn(async move {
         let req_builder = get_req_builder(
             method, 
@@ -62,10 +61,12 @@ pub fn send_request(
                         json
                     })
                 );
-                ctx.request_repaint();
             },
-            Err(_e) => ()
+            Err(_e) => { 
+                let _ = sender.send(Err(_e)); 
+            }
         }
+        ctx.request_repaint();
     });
 }
 
