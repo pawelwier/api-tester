@@ -4,6 +4,11 @@ use crate::app::browser_app::{
     BrowserApp, ReqMethod
 };
 
+use super::{
+    layouts::horizontal_align,
+    text::get_regular_text
+};
+
 fn get_req_method_name(method: &ReqMethod) -> String {
     match method {
         ReqMethod::Get => "Get".to_owned(),
@@ -14,8 +19,11 @@ fn get_req_method_name(method: &ReqMethod) -> String {
 }
 
 pub fn get_req_method_select(ui: &mut Ui, app: &mut BrowserApp) -> () {
-    for method in ReqMethod::VALUES {
-        let text = get_req_method_name(&method.clone());
-        ui.selectable_value(&mut app.method, method, text);
-    }
+    ui.with_layout(horizontal_align(), |ui| {
+        for method in ReqMethod::VALUES {
+            let text = get_req_method_name(&method.clone());
+            ui.selectable_value(&mut app.method, method, get_regular_text(text));
+        }
+    });
+    ui.add_space(10.);
 }

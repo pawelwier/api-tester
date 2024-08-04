@@ -7,6 +7,8 @@ use reqwest::StatusCode;
 
 use crate::http::HttpStatus;
 
+use super::text::get_regular_text;
+
 pub fn get_status_text(ui: &mut Ui, status: &HttpStatus) -> () {
     let has_code: bool = status.code.is_some();
 
@@ -18,7 +20,8 @@ pub fn get_status_text(ui: &mut Ui, status: &HttpStatus) -> () {
         Color32::WHITE
     } else { status.color.unwrap() };
         
-    ui.colored_label(color, &text);
+    ui.colored_label(color, get_regular_text(&text));
+    ui.add_space(10.);
 }
 
 pub fn get_status_color(status: StatusCode) -> Option<Color32> {

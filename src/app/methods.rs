@@ -64,7 +64,9 @@ impl BrowserApp {
         response_option: Result<HttpResponse, Error>
     ) {
         match response_option {
-            Ok(http_response) => { self.set_valid_data(http_response); },
+            Ok(http_response) => {
+                self.set_valid_data(http_response);
+            },
             Err(_) => { self.set_invalid_data(); }
         }
     }
