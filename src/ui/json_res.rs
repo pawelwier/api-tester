@@ -3,7 +3,7 @@ use eframe::egui::{
 };
 
 pub fn get_json_res_text(ui: &mut Ui, json: &Option<serde_json::Value>) {
-    let mut json_text: String = "JSON response:\n".to_string();
+    let mut json_text: String = "".to_string();
 
     // TODO: parse to be readable
     if let Some(json_option) = json {

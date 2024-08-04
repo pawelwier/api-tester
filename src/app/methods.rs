@@ -15,7 +15,10 @@ use crate::{
     }
 };
 
-use super::browser_app::BrowserApp;
+use super::{
+    browser_app::BrowserApp, 
+    response_tabs::ResponseTabType
+};
 
 impl BrowserApp {
     pub fn new(_cc: &CreationContext<'_>) -> Self {
@@ -98,5 +101,18 @@ impl BrowserApp {
                 ctx.clone()
             );
         }
+    }
+
+    pub fn show_response_tabs(&mut self) -> bool {
+        self.headers.is_some() || self.json.is_some()
+    }
+
+    // TODO: bind to app state
+    pub fn show_headers(&mut self) -> bool {
+        self.show_response_tabs() && self.response_tabs.visible_tab == ResponseTabType::Headers
+    }
+
+    pub fn show_json(&mut self) -> bool {
+        self.show_response_tabs() && self.response_tabs.visible_tab == ResponseTabType::Json
     }
 }
