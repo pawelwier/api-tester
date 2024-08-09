@@ -2,7 +2,9 @@ use eframe::egui::Ui;
 
 use crate::app::{
     browser_app::BrowserApp,
-    response_tabs::ResponseTabType
+    response_tabs::{
+        ResponseTabInfo, ResponseTabType
+    }
 };
 
 use super::{
@@ -19,12 +21,20 @@ fn switch_tab_type(app: &BrowserApp) -> ResponseTabType {
     }
 }
 
+fn is_tab_displayed(tab: &&ResponseTabInfo, app: &BrowserApp) -> bool {
+    if tab.tab_type == ResponseTabType::Json { return app.json.is_some() }
+    true
+}
+
 pub fn get_response_tab_select(ui: &mut Ui, app: &mut BrowserApp) -> () {
     ui.with_layout(horizontal_align(), |ui| {
-        let tabs = &app.response_tabs.tabs;
+        let tabs: Vec<&ResponseTabInfo> = app.response_tabs.tabs
+            .iter()
+            .filter(|tab| { is_tab_displayed(tab, app) })
+            .collect();
         for tab_info in tabs {
             // TODO: hide tab whose value is None
-             if ui.selectable_value(
+            if ui.selectable_value(
                 &mut &app.response_tabs.visible_tab,
                 &tab_info.tab_type,
                 get_regular_text(&tab_info.name)
