@@ -1,5 +1,5 @@
 use eframe::egui::{
-    Label, Ui
+    Label, ScrollArea, Ui
 };
 use reqwest::header::HeaderMap;
 use serde_json::{
@@ -28,6 +28,8 @@ pub fn get_headers_text(ui: &mut Ui, header_map: &Option<HeaderMap>) {
             Err(_) => "Result is not a valid JSON".to_owned()
         };
         
-        ui.add(Label::new(text));
+        ScrollArea::vertical().show(ui, |ui| {
+            ui.add(Label::new(text));
+        });
     }
 }

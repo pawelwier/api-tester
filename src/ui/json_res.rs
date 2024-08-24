@@ -1,5 +1,5 @@
 use eframe::egui::{
-    Label, Ui
+    Label, ScrollArea, Ui
 };
 use serde_json::{
     to_string_pretty, Value
@@ -12,7 +12,10 @@ pub fn get_json_res_text(ui: &mut Ui, json: &Option<Value>) {
                 Ok(data) => data,
                 Err(_) => "Result is not a valid JSON.".to_owned()
             };
-            ui.add(Label::new(text));
+            
+            ScrollArea::vertical().show(ui, |ui| {
+                ui.add(Label::new(text));
+            });
         }
     }
 }
